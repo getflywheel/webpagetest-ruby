@@ -67,6 +67,7 @@ When running a test, a `Response` object is returned, with the following availab
 ```ruby
 response = wpt.run_test do |params|
     params.url = 'http://webpagetest.org' # The url to test
+    params.runs = 3 # optional, default is 1 (full list of options: https://sites.google.com/a/webpagetest.org/docs/advanced-features/webpagetest-restful-apis#TOC-Sample)
 end
 
 # Test is running, so status must be requested
