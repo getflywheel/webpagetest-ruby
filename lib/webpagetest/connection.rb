@@ -14,8 +14,8 @@ module Webpagetest
 
       url = options.url || ENDPOINT
 
-      connection = Faraday.new(url: url) do |faraday|
-        faraday.request  options.request
+      connection = Faraday.new(url: url, ssl: { verify: false }) do |faraday|
+        faraday.request  options.request, options.user, options.pass
         faraday.response options.response unless options.response.nil?
         faraday.adapter  options.adapter
       end
