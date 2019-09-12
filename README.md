@@ -1,15 +1,17 @@
 # Webpagetest Ruby Wrapper
+This is a fork of the webpagetest-ruby gem, as it has not been maintained since 2015. It adds:
+- support for basic auth
+- enforces HTTPS requests with self-signed certs (it could be nice to add full SSL support at a later date, but for the current use, we don't need it)
+
 
 This gem is a Ruby wrapper for the main features of [Webpagetest](http://www.webpagetest.org/) REST API.
-Features included so far:
+Features included on the original gem (as of 2015):
 - Run tests with all [specified](https://sites.google.com/a/webpagetest.org/docs/advanced-features/webpagetest-restful-apis#TOC-Parameters) parameters of the API.
 - Check test status
 - Get available test locations
 
-This gem is inspired by [Susuwatari](https://github.com/moviepilot/susuwatari) gem, so several ideas were taken from there (it's like a rewrite with some modifications). There were two main reasons to create a new `Webpagetest` gem:
+This gem is inspired by [Susuwatari](https://github.com/moviepilot/susuwatari) gem, so several ideas were taken from there (it's like a rewrite with some modifications).
 
-- Susuwatari uses [Rest client](https://github.com/rest-client/rest-client) to make HTTP requests, but this gem uses [Faraday](https://github.com/lostisland/faraday) instead, since it's more flexible and extensible in terms of HTTP connection.
-- Susuwatari `Client` class is focused on test runs, but no general-purpose wrapper has been built so far (for example, locations were missing).
 
 ## Installation
 
@@ -26,16 +28,31 @@ Or install it yourself as:
     $ gem install webpagetest
 
 ## Usage
-All you require to use the gem is a Webpagetest API key in order to run tests. You can ask your own by emailing Patrick Meenan, like he explains in [Webpagetest docs](https://sites.google.com/a/webpagetest.org/docs/advanced-features/webpagetest-restful-apis).
+To run a test off of the public WebPageTest instance, all you require is an API key. You can ask for your own by emailing Patrick Meenan, like he explains in [Webpagetest docs](https://sites.google.com/a/webpagetest.org/docs/advanced-features/webpagetest-restful-apis).
 
-Basically, you need to instantiate an object of `Webpagetest` class, and then use it to interact with the API.
+To run a test off of the Flywheel private WebPageTest instance, you will need to use the API key assigned to our instance as well as a username and password for our instance. All Flywheel devs should have access to these in the Flywheel 1Pass vault.
+
+Then you need to instantiate an object of the `Webpagetest` class and use it to interact with the API.
+
+### Set up connection options for request
+
+```ruby
+connection_options = { 
+  request: :basic_auth,
+  response: :logger,
+  adapter: :net_http,
+  url: flywheels_private_webpagetest_instance,
+  user: your_username,
+  pass: your_password
+}
+```
 
 ### Instantiate WPT object
 
 ```ruby
 require 'webpagetest'
 
-wpt = Webpagetest.new(k: your_api_key)
+wpt = Webpagetest.new(k: your_api_key, options: connection_options)
 ```
 
 ### Run test
@@ -49,7 +66,7 @@ When running a test, a `Response` object is returned, with the following availab
 
 ```ruby
 response = wpt.run_test do |params|
-    params.url = 'http://webpagetest.org'
+    params.url = 'http://webpagetest.org' # The url to test
 end
 
 # Test is running, so status must be requested
