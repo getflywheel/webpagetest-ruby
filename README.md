@@ -60,7 +60,7 @@ When running a test, a `Response` object is returned, with the following availab
 
 * `test_id`: the `id` assigned to the submitted test
 * `status`: the status of the test (`nil` at the beginning)
-* `result`: the result object (`nil` at the beginning)
+* `result`: the result object (`nil` until the status is `:completed`)
 * `raw`: the raw response of the request
 * `get_status`: makes a test status request, and fetches the result when status is `:completed`
 
@@ -69,7 +69,51 @@ response = wpt.run_test do |params|
     params.url = 'http://webpagetest.org' # The url to test
     params.runs = 3 # optional, default is 1 (full list of options: https://sites.google.com/a/webpagetest.org/docs/advanced-features/webpagetest-restful-apis#TOC-Sample)
 end
+```
 
+### Option #1 (if you do not have access to the response object, only the client)
+```ruby
+test_result = wpt.test_result(response.test_id)
+
+# Test is running, so status must be requested
+test_result.status => :running
+test_result.result => nil
+
+# When test is completed, status and result will be updated
+test_result.status => :completed
+test_result.result => {
+                                         "id" => "190916_RC_8",
+                                        "url" => "your-test-url",
+                                    "summary" => "your-instance-url/results.php?test=190916_RC_8",
+                                    "testUrl" => "your-test-url",
+                                   "location" => "your-location",
+                                       "from" => "Iowa, USA - <b>Chrome</b> - <b>Cable</b>",
+                               "connectivity" => "Cable",
+                                     "bwDown" => 5000,
+                                       "bwUp" => 1000,
+                                    "latency" => 28,
+                                        "plr" => "0",
+                                     "mobile" => 0,
+                                  "completed" => 1568653286,
+                                     "tester" => "your-tester-id",
+                                   "testRuns" => 3,
+                                     "fvonly" => false,
+                           "successfulFVRuns" => 3,
+                           "successfulRVRuns" => 3,
+                                    "average" => {
+                               "firstView" => { ... },
+                               "repeatView" => { ... },
+                               "statusCode" => 200,
+                               "statusText" => "Test Complete"
+                      }
+
+# Test errored
+test_result.status => :errored
+test_result.result => nil
+```
+
+### Option #2 (if you do still have access to the response object)
+```
 # Test is running, so status must be requested
 response.get_status # => :running
 

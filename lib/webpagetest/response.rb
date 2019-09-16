@@ -9,22 +9,17 @@ module Webpagetest
     STATUS_BASE = 'testStatus.php'
     RESULT_BASE = 'jsonResult.php'
 
-    def initialize(client, raw_response, running=true)
+    def initialize(client, raw_response, running = true)
       @client = client
       @raw = raw_response
-      # ap raw_response
-      if !running && raw_response.statusCode == 200
-        @test_id = raw.data.id
-      elsif raw.data
-        @test_id = raw.data.testId
+
+      if raw.data.id.present?
+        set_status(raw.statusCode.to_s)
+        set_test_id(running)
+        set_result if status == :completed
       else
-        # An error occurred, for example:
-        # {
-        #   "statusCode" => 400,
-        #   "statusText" => "Invalid Location, please try submitting your test request again."
-        # }
-        @test_id = nil
-        # When @test_id is nil, calling `get_status` will set @status to :error.
+        @status = :running
+        set_test_id(running)
       end
     end
 
@@ -40,6 +35,38 @@ module Webpagetest
 
     private
 
+    # Check for the test id based on the status of the test
+    def set_test_id(running)
+      if !running && status == :completed
+        @test_id = raw.data.id
+      elsif raw.data
+        @test_id = raw.data.testId
+      else
+        # When @test_id is nil, calling `get_status` will set @status to :error.
+        @test_id = nil
+      end
+    end
+
+    # Check 3 possible scenarios (code from Susuwatari gem)
+    def set_status(status_code, fetch = false)
+      case status_code
+      when /1../
+        @status = :running
+      when "200"
+        @status = :completed
+        fetch_result if fetch
+      when /4../
+        @status = :error
+      end
+    end
+
+    # Set the status code and text and save the raw data to the result ivar
+    def set_result
+      raw.data.status_code = raw.statusCode
+      raw.data.status_text = raw.statusText
+      @result = raw.data
+    end
+
     # Makes the request to get the status of the test
     def fetch_status
       connection = @client.connection
@@ -50,16 +77,7 @@ module Webpagetest
       end
       response_body = Hashie::Mash.new(JSON.parse(response.body))
 
-      # Check 3 possible scenarios (code from Susuwatari gem)
-      case response_body.data.statusCode.to_s
-      when /1../
-        @status = :running
-      when "200"
-        @status = :completed
-        fetch_result
-      when /4../
-        @status = :error
-      end
+      set_status(response_body.data.statusCode.to_s, true)
     end
 
     # Makes the request to get the test result
