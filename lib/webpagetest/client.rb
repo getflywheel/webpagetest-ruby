@@ -7,7 +7,6 @@ module Webpagetest
 
     TEST_BASE = 'runtest.php'
     LOCATIONS_BASE = 'getLocations.php'
-    RESULT_BASE = 'jsonResult.php'
 
     # Main params for running tests
     def initialize(params = {})
@@ -44,10 +43,18 @@ module Webpagetest
       @response = Response.new(self, Hashie::Mash.new(JSON.parse(response.body)))
     end
 
+    # Gets the status of a test based on its id
+    def test_status(test_id)
+      test_params = Hashie::Mash.new({test: test_id, pagespeed: 1})
+      response = make_request(Response::STATUS_BASE, test_params)
+      return not_available (response) unless response.status == 200
+      @response = Response.new(self, HashieResponse.new(JSON.parse(response.body)), false)
+    end
+
     # Gets the result of a test based on its id
     def test_result(test_id)
-      test_params = Hashie::Mash.new( {test: test_id, pagespeed: 1} )
-      response = make_request(RESULT_BASE, test_params)
+      test_params = Hashie::Mash.new({test: test_id, pagespeed: 1})
+      response = make_request(Response::RESULT_BASE, test_params)
       return not_available (response) unless response.status == 200
       @response = Response.new(self, HashieResponse.new(JSON.parse(response.body)), false)
     end
