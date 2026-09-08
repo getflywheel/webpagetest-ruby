@@ -1,0 +1,46 @@
+name: Smoke Test
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+
+      # The gemspec pins bundler ~> 2.3.20, which conflicts with newer
+      # system bundler versions during dependency resolution.
+      - name: Install pinned bundler version
+        run: gem install bundler -v 2.3.27 --no-document
+
+      - name: Install dependencies
+        run: bundle _2.3.27_ install
+
+      # Uses the same connection options flywheel-app actually configures in
+      # production (request: :basic_auth) rather than this gem's own broken
+      # defaults - see README "Known Issues".
+      - name: Verify the gem builds a working connection
+        run: |
+          bundle _2.3.27_ exec ruby -Ilib -e '
+            require "webpagetest"
+            options = {
+              request: :basic_auth,
+              response: :logger,
+              adapter: :net_http,
+              url: "https://example.com",
+              user: "smoke-test-user",
+              pass: "smoke-test-pass"
+            }
+            client = Webpagetest::Client.new(k: "demo", options: options)
+            raise "connection not built" unless client.connection.is_a?(Faraday::Connection)
+            puts "Loaded OK, connection built with production-style options"
+          '
