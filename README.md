@@ -12,6 +12,11 @@ Features included on the original gem (as of 2015):
 
 This gem is inspired by [Susuwatari](https://github.com/moviepilot/susuwatari) gem, so several ideas were taken from there (it's like a rewrite with some modifications).
 
+## Known Issues
+
+`Webpagetest::Connection#get_connection` always calls `faraday.request options.request, options.user, options.pass`, passing `user`/`pass` as positional arguments regardless of which Faraday request middleware is configured. This is only valid for `:basic_auth`-style middleware; other middleware (including this gem's own default, `:url_encoded`) doesn't accept those extra arguments and raises `ArgumentError: wrong number of arguments`.
+
+**In practice:** as long as you always pass connection options with `request: :basic_auth` and real `user`/`pass` values (as shown in [Set up connection options for request](#set-up-connection-options-for-request) below), you won't hit this. It only breaks if you instantiate `Webpagetest::Client`/`Webpagetest.new` without custom `options:` (falling back to this gem's own defaults), or otherwise configure a request middleware other than `:basic_auth`.
 
 ## Installation
 
